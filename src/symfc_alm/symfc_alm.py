@@ -1,13 +1,14 @@
 """Symfc-alm module."""
+import io
+import lzma
+import os
+import pathlib
 from dataclasses import dataclass
 from typing import Optional, Union
+
 import numpy as np
 import numpy.typing as npt
 from alm import ALM
-import lzma
-import pathlib
-import io
-import os
 
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):

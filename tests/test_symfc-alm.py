@@ -1,7 +1,8 @@
 """Tests of symfc-alm API."""
-import numpy as np
-from symfc_alm import DispForceDataset, CellDataset, SymfcAlm
 import h5py
+import numpy as np
+
+from symfc_alm import CellDataset, DispForceDataset, SymfcAlm
 
 
 def test_df_dataset(nacl_222_dataset: DispForceDataset):

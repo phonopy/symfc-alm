@@ -2,9 +2,9 @@
 from pathlib import Path
 
 import numpy as np
-from symfc_alm import read_dataset, DispForceDataset, CellDataset
 import pytest
 
+from symfc_alm import CellDataset, DispForceDataset, read_dataset
 
 cwd = Path(__file__).parent
 
