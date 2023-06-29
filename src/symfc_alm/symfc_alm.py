@@ -89,10 +89,13 @@ class CellDataset:
 class SymfcAlm:
     """Symfc-alm API."""
 
-    def __init__(self, dataset: DispForceDataset, cell: CellDataset):
+    def __init__(
+        self, dataset: DispForceDataset, cell: CellDataset, log_level: int = 0
+    ):
         """Init method."""
         self._dataset = dataset
         self._cell = cell
+        self._log_level = log_level
 
     def run(self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None):
         """Compute force constants.
@@ -109,11 +112,62 @@ class SymfcAlm:
             ``[i + 2 for i in range(maxorder)]`` like the first example.
 
         """
+        A, b = self.get_matrix_elements(maxorder=maxorder, nbody=nbody)
+        psi = np.linalg.pinv(A) @ b
         cell = self._cell
-        with ALM(cell.lattice, cell.points, cell.numbers, verbose=True) as alm:
+        with ALM(
+            cell.lattice, cell.points, cell.numbers, verbosity=self._log_level
+        ) as alm:
+            alm.define(maxorder, nbody=nbody)
+            alm.set_constraint()
+            alm.set_fc(psi)
+            fcs = self._extract_fc_from_alm(alm, maxorder)
+        return fcs
+
+    def get_matrix_elements(
+        self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None
+    ):
+        """Return matrix elements to compute force constants.
+
+        Parameters
+        ----------
+        See docstring of SymfcAlm.run().
+
+        Return
+        ------
+        tuple[A: np.ndarray, b: np.ndarray]
+            Matrix A and vector b.
+            When using least square fitting, force constants psi are computed by
+                psi = A^~1.b
+
+        """
+        cell = self._cell
+        with ALM(
+            cell.lattice, cell.points, cell.numbers, verbosity=self._log_level
+        ) as alm:
             alm.define(maxorder, nbody=nbody)
             alm.set_constraint()
             alm.displacements = self._dataset.displacements
             alm.forces = self._dataset.forces
-            X, y = alm.get_matrix_elements()
-            print(X.shape, y.shape)
+            A, b = alm.get_matrix_elements()
+
+        return A, b
+
+    def _extract_fc_from_alm(self, alm: ALM, maxorder):
+        natom = len(self._cell)
+        fcs = []
+        for order in range(1, maxorder + 1):
+            atom_list = np.arange(natom, dtype=int)
+            fc_shape = (len(atom_list),) + (natom,) * order + (3,) * (order + 1)
+            fc = np.zeros(fc_shape, dtype="double", order="C")
+            for fc_elem, indices in zip(*alm.get_fc(order, mode="all")):
+                v = indices // 3
+                idx = np.where(atom_list == v[0])[0]
+                if len(idx) > 0:
+                    c = indices % 3
+                    selection = (idx[0],) + tuple(v[1:]) + tuple(c)
+                    fc[selection] = fc_elem
+
+            fcs.append(fc)
+
+        return fcs

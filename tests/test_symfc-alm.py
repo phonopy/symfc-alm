@@ -1,6 +1,7 @@
 """Tests of symfc-alm API."""
 import numpy as np
-from symfc_alm import DispForceDataset, CellDataset
+from symfc_alm import DispForceDataset, CellDataset, SymfcAlm
+import h5py
 
 
 def test_df_dataset(nacl_222_dataset: DispForceDataset):
@@ -22,3 +23,28 @@ def test_cell_dataset(nacl_222_structure: CellDataset):
     np.testing.assert_allclose(cell.points[-1], [0.50, 0.50, 0.75])
     np.testing.assert_array_equal(cell.points.shape, (len(cell), 3))
     assert len(cell.numbers) == len(cell)
+
+
+def test_run_fc2(nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDataset):
+    """Test SymfcAlm.run() with NaCl fc2.
+
+    Note1
+    -----
+    `phonopy_NaCl.yaml` can be used with `force_constants_NaCl.hdf5` to run phonopy.
+
+    Note2
+    -----
+    Fc2 was written in hdf5 by:
+
+       with h5py.File("force_constants_NaCl.hdf5", "w") as w:
+           w.create_dataset("force_constants", data=fcs[0], compression="gzip")
+
+
+    """
+    sfa = SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0)
+    fcs = sfa.run(maxorder=1)
+
+    with h5py.File("force_constants_NaCl.hdf5") as f:
+        fc2 = f["force_constants"][:]
+
+    np.testing.assert_allclose(fcs[0], fc2)

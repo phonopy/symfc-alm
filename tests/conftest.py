@@ -2,8 +2,9 @@
 from pathlib import Path
 
 import numpy as np
-from symfc_alm import symfc_alm, read_dataset, DispForceDataset, CellDataset
+from symfc_alm import read_dataset, DispForceDataset, CellDataset
 import pytest
+
 
 cwd = Path(__file__).parent
 
@@ -85,4 +86,4 @@ def nacl_222_structure() -> CellDataset:
 @pytest.fixture(scope="session")
 def nacl_222_dataset() -> DispForceDataset:
     """Return NaCl 2x2x2 dataset."""
-    return read_dataset("FORCE_SETS_NaCl.xz")
+    return read_dataset(cwd / "FORCE_SETS_NaCl.xz")
