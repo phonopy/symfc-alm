@@ -1,8 +1,12 @@
 """Tests of symfc-alm API."""
+from pathlib import Path
+
 import h5py
 import numpy as np
 
 from symfc_alm import CellDataset, DispForceDataset, SymfcAlm
+
+cwd = Path(__file__).parent
 
 
 def test_df_dataset(nacl_222_dataset: DispForceDataset):
@@ -45,7 +49,7 @@ def test_run_fc2(nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDat
     sfa = SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0)
     fcs = sfa.run(maxorder=1)
 
-    with h5py.File("force_constants_NaCl.hdf5") as f:
+    with h5py.File(cwd / "force_constants_NaCl.hdf5") as f:
         fc2 = f["force_constants"][:]
 
     np.testing.assert_allclose(fcs[0], fc2)
