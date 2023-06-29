@@ -8,7 +8,8 @@ setup(
     description="This is the symfc-alm module.",
     author="Atsushi Togo",
     author_email="atz.togo@gmail.com",
-    install_requires=["numpy", "alm"],
+    python_requires=">=3.8",
+    install_requires=["numpy>=1.22", "alm"],
     provides=["symfc_alm"],
     platforms=["all"],
 )
