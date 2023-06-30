@@ -87,3 +87,27 @@ def nacl_222_structure() -> CellDataset:
 def nacl_222_dataset() -> DispForceDataset:
     """Return NaCl 2x2x2 dataset."""
     return read_dataset(cwd / "FORCE_SETS_NaCl.xz")
+
+
+@pytest.fixture(scope="session")
+def si_111_structure() -> CellDataset:
+    """Return Si 1x1x1 supercell structure."""
+    lattice = np.eye(3) * 5.43356
+    points = [
+        [0.875, 0.875, 0.875],
+        [0.875, 0.375, 0.375],
+        [0.375, 0.875, 0.375],
+        [0.375, 0.375, 0.875],
+        [0.125, 0.125, 0.125],
+        [0.125, 0.625, 0.625],
+        [0.625, 0.125, 0.625],
+        [0.625, 0.625, 0.125],
+    ]
+    numbers = [14] * 8
+    return CellDataset(lattice, points, numbers)
+
+
+@pytest.fixture(scope="session")
+def si_111_dataset() -> DispForceDataset:
+    """Return Si 1x1x1 dataset."""
+    return read_dataset(cwd / "FORCE_SETS_Si111.xz")

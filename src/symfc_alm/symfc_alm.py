@@ -1,4 +1,6 @@
 """Symfc-alm module."""
+from __future__ import annotations
+
 import io
 import lzma
 import os
@@ -98,7 +100,9 @@ class SymfcAlm:
         self._cell = cell
         self._log_level = log_level
 
-    def run(self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None):
+    def run(
+        self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None
+    ) -> list[np.ndarray]:
         """Compute force constants.
 
         Parameters
@@ -127,7 +131,7 @@ class SymfcAlm:
 
     def get_matrix_elements(
         self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None
-    ):
+    ) -> tuple[np.ndarray, np.ndarray]:
         """Return matrix elements to compute force constants.
 
         Parameters
