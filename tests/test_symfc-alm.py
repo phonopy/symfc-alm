@@ -32,7 +32,9 @@ def test_cell_dataset(nacl_222_structure: CellDataset):
     assert len(cell.numbers) == len(cell)
 
 
-def test_run_fc2(nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDataset):
+def test_run_fc2_nacl(
+    nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDataset
+):
     """Test SymfcAlm.run() with NaCl fc2.
 
     Note1
@@ -43,7 +45,7 @@ def test_run_fc2(nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDat
     -----
     Fc2 was written in hdf5 by:
 
-       with h5py.File("force_constants_NaCl.hdf5", "w") as w:
+       with h5py.File(cwd / "force_constants_NaCl.hdf5", "w") as w:
            w.create_dataset("force_constants", data=fcs[0], compression="gzip")
 
 
@@ -55,6 +57,40 @@ def test_run_fc2(nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDat
         fc2 = f["force_constants"][:]
 
     np.testing.assert_allclose(fcs[0], fc2)
+
+
+def test_run_fc2_fc3_si(
+    si_111_dataset: DispForceDataset, si_111_structure: CellDataset
+):
+    """Test SymfcAlm.run() with Si fc2 and fc3 simultaneously.
+
+    Note1
+    -----
+    `phono3py_Si111.yaml` can be used with `force_constants_Si111.hdf5` to run phonopy.
+
+    Note2
+    -----
+    Fc2 was written in hdf5 by:
+
+       with h5py.File(cwd / "fc2_Si111.hdf5", "w") as w:
+           w.create_dataset("force_constants", data=fcs[0], compression="gzip")
+       with h5py.File(cwd / "fc3_Si111.hdf5", "w") as w:
+           w.create_dataset("fc3", data=fcs[1], compression="gzip")
+
+
+    """
+    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
+    fcs = sfa.run(maxorder=2)
+    with h5py.File(cwd / "fc2_Si111.hdf5") as f:
+        fc2 = f["force_constants"][:]
+    with h5py.File(cwd / "fc3_Si111.hdf5") as f:
+        fc3 = f["fc3"][:]
+
+    natom = len(si_111_structure)
+    assert fc2.shape == (natom, natom, 3, 3)
+    assert fc3.shape == (natom, natom, natom, 3, 3, 3)
+    np.testing.assert_allclose(fcs[0], fc2)
+    np.testing.assert_allclose(fcs[1], fc3)
 
 
 def test_get_matrix_elements_fc2_si(
