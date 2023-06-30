@@ -1,4 +1,6 @@
 """Tests of symfc-alm API."""
+from __future__ import annotations
+
 from pathlib import Path
 
 import h5py
@@ -53,3 +55,72 @@ def test_run_fc2(nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDat
         fc2 = f["force_constants"][:]
 
     np.testing.assert_allclose(fcs[0], fc2)
+
+
+def test_get_matrix_elements_fc2_si(
+    si_111_dataset: DispForceDataset, si_111_structure: CellDataset
+):
+    """Test SymfcAlm.get_matrix_elements() with Si fc2.
+
+    * A.shape[0] = b.shape[0] = np.prod(displacements)
+    * A.shape[1] roughly corresponds to the number of symmetrycally independent
+      force constants elements.
+
+    """
+    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
+    A, b = sfa.get_matrix_elements(maxorder=1)
+    assert A.shape[0] == np.prod(si_111_dataset.displacements.shape)
+    assert A.shape[1] == 4
+    assert A.shape[0] == b.shape[0]
+
+
+def test_get_matrix_elements_fc3_si(
+    si_111_dataset: DispForceDataset, si_111_structure: CellDataset
+):
+    """Test SymfcAlm.get_matrix_elements() with Si fc3.
+
+    * A.shape[0] = b.shape[0] = np.prod(displacements)
+    * A.shape[1] roughly corresponds to the number of symmetrycally independent
+      force constants elements.
+
+    """
+    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
+    A, b = sfa.get_matrix_elements(maxorder=2, nbody=[0, 3])
+    assert A.shape[0] == np.prod(si_111_dataset.displacements.shape)
+    assert A.shape[1] == 13
+    assert A.shape[0] == b.shape[0]
+
+
+def test_get_matrix_elements_fc2_fc3_si(
+    si_111_dataset: DispForceDataset, si_111_structure: CellDataset
+):
+    """Test SymfcAlm.get_matrix_elements() with Si fc2 and fc3 simultaneously.
+
+    * A.shape[0] = b.shape[0] = np.prod(displacements)
+    * A.shape[1] roughly corresponds to the number of symmetrycally independent
+      force constants elements.
+
+    """
+    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
+    A, b = sfa.get_matrix_elements(maxorder=2)
+    assert A.shape[0] == np.prod(si_111_dataset.displacements.shape)
+    assert A.shape[1] == 17  # 4 + 13
+    assert A.shape[0] == b.shape[0]
+
+
+def test_get_matrix_elements_fc2_nacl(
+    nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDataset
+):
+    """Test SymfcAlm.get_matrix_elements() with NaCl fc2.
+
+    * A.shape[0] = b.shape[0] = np.prod(displacements)
+    * A.shape[1] roughly corresponds to the number of symmetrycally independent
+      force constants elements.
+
+    """
+    sfa = SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0)
+    # fc2 only
+    A, b = sfa.get_matrix_elements(maxorder=1)
+    assert A.shape[0] == np.prod(nacl_222_dataset.displacements.shape)
+    assert A.shape[1] == 31
+    assert A.shape[0] == b.shape[0]
