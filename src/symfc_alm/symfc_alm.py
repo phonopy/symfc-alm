@@ -6,11 +6,30 @@ import lzma
 import os
 import pathlib
 from dataclasses import dataclass
+from enum import Enum
 from typing import Optional, Union
 
 import numpy as np
 import numpy.typing as npt
 from alm import ALM
+
+
+class ALMNotInstanciatedError(RuntimeError):
+    """Error of that ALM is not instanciated."""
+
+    pass
+
+
+class ALMAlreadyExistsError(RuntimeError):
+    """Error of that ALM is already instanciated."""
+
+    pass
+
+
+class LinearModel(Enum):
+    """Linear model used for fitting force constants."""
+
+    LinearRegression = 1
 
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
@@ -90,7 +109,17 @@ class CellDataset:
 
 
 class SymfcAlm:
-    """Symfc-alm API."""
+    """Symfc-alm API.
+
+    SymfcAlm.alm_new() has to be called after instantiated and
+    SymfcAlm.alm_delete() has to be called after using. These can be handled by
+    context manager, e.g.,
+
+    with SymfcAlm(dataset, cell) as sfa:
+        sfa.run()
+    force_constants = sfa.force_constants
+
+    """
 
     def __init__(
         self, dataset: DispForceDataset, cell: CellDataset, log_level: int = 0
@@ -99,10 +128,50 @@ class SymfcAlm:
         self._dataset = dataset
         self._cell = cell
         self._log_level = log_level
+        self._alm: Optional[ALM] = None
+
+    @property
+    def force_constants(self) -> list[np.ndarray]:
+        """Return force constants."""
+        return self._force_constants
+
+    def __enter__(self):
+        """Create ALM instance."""
+        self.alm_new()
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        """Delete ALM instance."""
+        self.alm_delete()
+
+    def alm_new(self):
+        """Create ALM instance.
+
+        This create not only a python ALM instance but also the C++ ALM instance.
+        So this has to be cleanly deleted by invoking self.alm_delete().
+
+        """
+        if self._alm is not None:
+            raise ALMAlreadyExistsError("ALM is already instanticated.")
+
+        cell = self._cell
+        self._alm = ALM(
+            cell.lattice, cell.points, cell.numbers, verbosity=self._log_level
+        )
+        self._alm.alm_new()
+
+    def alm_delete(self):
+        """Delete ALM instance."""
+        if self._alm is not None:
+            self._alm.alm_delete()
+            self._alm = None
 
     def run(
-        self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None
-    ) -> list[np.ndarray]:
+        self,
+        maxorder: int = 2,
+        nbody: Optional[npt.ArrayLike] = None,
+        linear_model: LinearModel = LinearModel.LinearRegression,
+    ):
         """Compute force constants.
 
         Parameters
@@ -117,17 +186,47 @@ class SymfcAlm:
             ``[i + 2 for i in range(maxorder)]`` like the first example.
 
         """
-        A, b = self.get_matrix_elements(maxorder=maxorder, nbody=nbody)
-        psi = np.linalg.pinv(A) @ b
-        cell = self._cell
-        with ALM(
-            cell.lattice, cell.points, cell.numbers, verbosity=self._log_level
-        ) as alm:
-            alm.define(maxorder, nbody=nbody)
-            alm.set_constraint()
-            alm.set_fc(psi)
-            fcs = self._extract_fc_from_alm(alm, maxorder)
-        return fcs
+        if self._alm is None:
+            raise ALMNotInstanciatedError("ALM is not instanciated.")
+        self.prepare(maxorder=maxorder, nbody=nbody)
+        A, b = self._alm.get_matrix_elements()
+        self.fit(A, b, linear_model=linear_model)
+        self._force_constants = self._extract_fc_from_alm(self._alm, maxorder)
+
+    def prepare(self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None):
+        """Prepare force constants calculation setting.
+
+        Parameters
+        ----------
+        See docstring of SymfcAlm.run().
+
+        """
+        if self._alm is None:
+            raise ALMNotInstanciatedError("ALM is not instanciated.")
+        self._alm.define(maxorder, nbody=nbody)
+        self._alm.set_constraint()
+        self._alm.displacements = self._dataset.displacements
+        self._alm.forces = self._dataset.forces
+
+    def fit(
+        self,
+        A: np.ndarray,
+        b: np.ndarray,
+        linear_model: LinearModel = LinearModel.LinearRegression,
+    ):
+        """Fit force cosntants using matrices A and b.
+
+        LinearModel.LinearRegression:
+            psi = min_{psi} (A psi - b)
+
+        """
+        if self._alm is None:
+            raise ALMNotInstanciatedError("ALM is not instanciated.")
+        if linear_model is LinearModel.LinearRegression:
+            psi = np.linalg.pinv(A) @ b
+        else:
+            raise RuntimeError("Unsupported linear model.")
+        self._alm.set_fc(psi)
 
     def get_matrix_elements(
         self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None
@@ -146,15 +245,13 @@ class SymfcAlm:
                 psi = A^~1.b
 
         """
-        cell = self._cell
-        with ALM(
-            cell.lattice, cell.points, cell.numbers, verbosity=self._log_level
-        ) as alm:
-            alm.define(maxorder, nbody=nbody)
-            alm.set_constraint()
-            alm.displacements = self._dataset.displacements
-            alm.forces = self._dataset.forces
-            A, b = alm.get_matrix_elements()
+        if self._alm is None:
+            raise ALMNotInstanciatedError("ALM is not instanciated.")
+        self._alm.define(maxorder, nbody=nbody)
+        self._alm.set_constraint()
+        self._alm.displacements = self._dataset.displacements
+        self._alm.forces = self._dataset.forces
+        A, b = self._alm.get_matrix_elements()
 
         return A, b
 
