@@ -1,12 +1,14 @@
 """Symfc-alm module."""
 from __future__ import annotations
+
 import io
 import lzma
 import os
 import pathlib
 from dataclasses import dataclass
-from typing import Optional, Union
 from enum import Enum
+from typing import Optional, Union
+
 import numpy as np
 import numpy.typing as npt
 from alm import ALM
