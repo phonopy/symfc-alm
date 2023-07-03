@@ -50,13 +50,14 @@ def test_run_fc2_nacl(
 
 
     """
-    sfa = SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0)
-    fcs = sfa.run(maxorder=1)
+    with SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0) as sfa:
+        sfa.run(maxorder=1)
+    assert sfa._alm is None
 
     with h5py.File(cwd / "force_constants_NaCl.hdf5") as f:
         fc2 = f["force_constants"][:]
 
-    np.testing.assert_allclose(fcs[0], fc2)
+    np.testing.assert_allclose(sfa.force_constants[0], fc2)
 
 
 def test_run_fc2_fc3_si(
@@ -79,8 +80,9 @@ def test_run_fc2_fc3_si(
 
 
     """
-    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
-    fcs = sfa.run(maxorder=2)
+    with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
+        sfa.run(maxorder=2)
+    assert sfa._alm is None
     with h5py.File(cwd / "fc2_Si111.hdf5") as f:
         fc2 = f["force_constants"][:]
     with h5py.File(cwd / "fc3_Si111.hdf5") as f:
@@ -89,8 +91,8 @@ def test_run_fc2_fc3_si(
     natom = len(si_111_structure)
     assert fc2.shape == (natom, natom, 3, 3)
     assert fc3.shape == (natom, natom, natom, 3, 3, 3)
-    np.testing.assert_allclose(fcs[0], fc2)
-    np.testing.assert_allclose(fcs[1], fc3)
+    np.testing.assert_allclose(sfa.force_constants[0], fc2)
+    np.testing.assert_allclose(sfa.force_constants[1], fc3)
 
 
 def test_get_matrix_elements_fc2_si(
@@ -103,8 +105,9 @@ def test_get_matrix_elements_fc2_si(
       force constants elements.
 
     """
-    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
-    A, b = sfa.get_matrix_elements(maxorder=1)
+    with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
+        A, b = sfa.get_matrix_elements(maxorder=1)
+    assert sfa._alm is None
     assert A.shape[0] == np.prod(si_111_dataset.displacements.shape)
     assert A.shape[1] == 4
     assert A.shape[0] == b.shape[0]
@@ -120,8 +123,9 @@ def test_get_matrix_elements_fc3_si(
       force constants elements.
 
     """
-    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
-    A, b = sfa.get_matrix_elements(maxorder=2, nbody=[0, 3])
+    with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
+        A, b = sfa.get_matrix_elements(maxorder=2, nbody=[0, 3])
+    assert sfa._alm is None
     assert A.shape[0] == np.prod(si_111_dataset.displacements.shape)
     assert A.shape[1] == 13
     assert A.shape[0] == b.shape[0]
@@ -137,8 +141,9 @@ def test_get_matrix_elements_fc2_fc3_si(
       force constants elements.
 
     """
-    sfa = SymfcAlm(si_111_dataset, si_111_structure, log_level=0)
-    A, b = sfa.get_matrix_elements(maxorder=2)
+    with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
+        A, b = sfa.get_matrix_elements(maxorder=2)
+    assert sfa._alm is None
     assert A.shape[0] == np.prod(si_111_dataset.displacements.shape)
     assert A.shape[1] == 17  # 4 + 13
     assert A.shape[0] == b.shape[0]
@@ -154,9 +159,9 @@ def test_get_matrix_elements_fc2_nacl(
       force constants elements.
 
     """
-    sfa = SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0)
-    # fc2 only
-    A, b = sfa.get_matrix_elements(maxorder=1)
+    with SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0) as sfa:
+        A, b = sfa.get_matrix_elements(maxorder=1)
+    assert sfa._alm is None
     assert A.shape[0] == np.prod(nacl_222_dataset.displacements.shape)
     assert A.shape[1] == 31
     assert A.shape[0] == b.shape[0]
