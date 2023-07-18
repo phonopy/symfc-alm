@@ -119,6 +119,35 @@ def test_run_fc2_fc3_si(
     np.testing.assert_allclose(sfa.force_constants[1], fc3)
 
 
+def test_run_fc2_fc3_si_ridge(
+    si_111_dataset: DispForceDataset, si_111_structure: CellDataset
+):
+    """Test SymfcAlm.run() with Si fc2 and fc3 simultaneously using ridge regression.
+
+    Note1
+    -----
+    See docstring of test_run_fc2_fc3_si().
+
+    Note2
+    -----
+    See docstring of test_run_fc2_fc3_si().
+
+    """
+    with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
+        sfa.run(maxorder=2, auto=False, linear_model=LinearModel(2))
+    assert sfa._alm is None
+    with h5py.File(cwd / "fc2_Si111.hdf5") as f:
+        fc2 = f["force_constants"][:]
+    with h5py.File(cwd / "fc3_Si111.hdf5") as f:
+        fc3 = f["fc3"][:]
+
+    natom = len(si_111_structure)
+    assert fc2.shape == (natom, natom, 3, 3)
+    assert fc3.shape == (natom, natom, natom, 3, 3, 3)
+    np.testing.assert_allclose(sfa.force_constants[0], fc2, rtol=1e-05, atol=1e-08)
+    np.testing.assert_allclose(sfa.force_constants[1], fc3, rtol=1e-05, atol=1e-08)
+
+
 def test_get_matrix_elements_fc2_si(
     si_111_dataset: DispForceDataset, si_111_structure: CellDataset
 ):
