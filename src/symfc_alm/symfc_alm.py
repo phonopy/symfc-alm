@@ -435,6 +435,8 @@ class SymfcAlm:
 
         LinearModel.LinearRegression:
             psi = min_{psi} (A psi - b)
+        LinearModel.RidgeRegression:
+            psi = min_{psi} (A psi - b)^{2} + alpha(psi)^{2}
 
         """
         if self._alm is None:
