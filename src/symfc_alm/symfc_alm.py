@@ -106,6 +106,21 @@ class RidgeRegression:
         """
         self._coeff = np.linalg.solve(A.T @ A + alpha * np.eye(A.shape[1]), A.T @ b)
 
+    def _predict(self, A: np.ndarray):
+        """Generate predictions from fitted parameters.
+
+        Parameters
+        ----------
+        A : See docstring of RidgeRegression.run().
+
+        Returns
+        -------
+        ndarray
+            Predicted values from fitted model.
+
+        """
+        return A @ self._coeff
+
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
     """Read displacements-forces dataset.
