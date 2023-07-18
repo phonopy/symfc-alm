@@ -30,7 +30,7 @@ class LinearModel(Enum):
     """Linear model used for fitting force constants."""
 
     LinearRegression = 1
-    Ridgeregression = 2
+    RidgeRegression = 2
 
 
 class RidgeRegression:
