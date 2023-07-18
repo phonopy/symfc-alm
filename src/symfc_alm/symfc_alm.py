@@ -126,6 +126,47 @@ class RidgeRegression:
         else:
             self._psi = self._coeff
 
+    def run_auto(
+        self,
+        A: np.ndarray,
+        b: np.ndarray,
+        standardize: bool = True,
+        min_alpha: int = -6,
+        max_alpha: int = 1,
+        n_alphas: int = 100,
+    ):
+        """Fit force constants with an optimized hyperparameter.
+
+        Parameters
+        ----------
+        A : See docstring of RidgeRegression.run().
+        b : See docstring of RidgeRegression.run().
+        standardize: See docstring of RidgeRegression.run().
+        min_alpha: int
+            Minimum value of hyperparameter alpha on a logarithmic scale.
+        max_alpha: int
+            Maximum value of hyperparameter alpha on a logarithmic scale.
+        n_alphas: int
+            The number of divisions for hyperparameters.
+
+        """
+        if standardize:
+            A, scale = standardize_data(A)
+
+        self._alphas = np.logspace(max_alpha, min_alpha, num=n_alphas)
+        self._errors = np.zeros(len(self._alphas))
+        for i, alpha in enumerate(self._alphas):
+            self._fit(A, b, alpha)
+            self._errors[i] = self._calc_error(A, b, alpha)
+
+        self._opt_alpha = self._alphas[np.argmin(self._errors)]
+        self._fit(A, b, self._opt_alpha)
+
+        if standardize:
+            self._psi = np.true_divide(self._coeff, scale)
+        else:
+            self._psi = self._coeff
+
     def _fit(self, A: np.ndarray, b: np.ndarray, alpha: float):
         """Fit force constants.
 
