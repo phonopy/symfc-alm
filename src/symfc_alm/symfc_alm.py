@@ -121,6 +121,35 @@ class RidgeRegression:
         """
         return A @ self._coeff
 
+    def _calc_error(self, A: np.ndarray, b: np.ndarray, alpha: float):
+        r"""Analytically calculate leave-one-out cross validation (LOOCV) error.
+
+        The LOOCV error is calculated as:
+
+        E_{LOOCV} = \frac{1}{n}\sum_{j=1}^{n}\left[\frac{1}{1-\beta_{j}}(b_{j}
+                                                   - \hat{b_{j}}) \right]^{2}
+
+        where beta is the diagonal component of
+
+        H = A(A^{T}A + \alpha I)^{-1}A^{T}
+
+        Parameters
+        ----------
+        See docstring of RidgeRegression.run() for parameter descriptions.
+
+        Returns
+        -------
+        error : float
+            The mean squared error calculated by LOOCV.
+
+        """
+        b_pred = self._predict(A)
+        H = A @ np.linalg.inv(A.T @ A + alpha * np.eye(A.shape[1])) @ A.T
+        beta = np.diag(H)
+        error = np.mean(((b - b_pred) / (1 - beta)) ** 2)
+
+        return error
+
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
     """Read displacements-forces dataset.
