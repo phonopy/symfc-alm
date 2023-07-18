@@ -30,6 +30,38 @@ class LinearModel(Enum):
     """Linear model used for fitting force constants."""
 
     LinearRegression = 1
+    Ridgeregression = 2
+
+
+class RidgeRegression:
+    r"""Ridge Regression model using leave-one-out cross validation.
+
+    In the Ridge Regression technique, one solves the following equation:
+
+    \tilde{\Phi} = arg\underset{\Phi}{min}\lVert b-A\Phi\rVert^{2}_{2}
+                   +\alpha\lVert\Phi\rVert^{2}_{2}
+
+    where the matrix A is derived from displacements, b is derived from atomic forces,
+    and alpha is a hyperparameter.
+
+    Attributes
+    ----------
+    psi : ndarray
+        The matrix of irreducible set of force constants.
+        shape=(num_fc,)
+    coeff : ndarray
+        The matrix of regression coefficients.
+        shape=(num_fc,)
+    alphas : ndarray
+        The array of hyperparameters used for ridge regression.
+        shape=(num_alpha,)
+    opt_alpha: float
+        Hyperparameter that results in minimal errors.
+    errors: ndarray
+        Array of errors corresponding to each hyperparameter in 'alphas'.
+        shape=(num_error,)
+
+    """
 
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
