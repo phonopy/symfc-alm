@@ -96,6 +96,36 @@ class RidgeRegression:
         """Return the list of errors."""
         return self._errors
 
+    def run(
+        self, A: np.ndarray, b: np.ndarray, alpha: float = 0.1, standardize: bool = True
+    ):
+        """Fit force constants using a specific hyperparameter.
+
+        Parameters
+        ----------
+        A : ndarray
+            Matrix A, derived from displacements.
+            shape=(3 * num_atoms * ndata, num_fc)
+        b : ndarray
+            Vector b, derived from atomic forces.
+            shape=(3 * num_atoms * ndata,)
+        alpha: float
+            Hyperparameter for regularization terms.
+        standardize: bool, optional
+            When set to ``True``, standardize the input matrix A.
+
+        """
+        if standardize:
+            A, scale = standardize_data(A)
+
+        self._fit(A, b, alpha)
+        self._errors = np.array([self._calc_error(A, b, alpha)])
+
+        if standardize:
+            self._psi = np.true_divide(self._coeff, scale)
+        else:
+            self._psi = self._coeff
+
     def _fit(self, A: np.ndarray, b: np.ndarray, alpha: float):
         """Fit force constants.
 
