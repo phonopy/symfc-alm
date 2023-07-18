@@ -2,7 +2,8 @@
 
 import numpy as np
 import pytest
-from symfc_alm_ import (
+
+from symfc_alm import (
     CellDataset,
     DispForceDataset,
     RidgeRegression,
