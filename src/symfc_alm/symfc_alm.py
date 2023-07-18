@@ -382,6 +382,8 @@ class SymfcAlm:
     def run(
         self,
         maxorder: int = 2,
+        alpha: float = 0.1,
+        auto: bool = True,
         nbody: Optional[npt.ArrayLike] = None,
         linear_model: LinearModel = LinearModel.LinearRegression,
     ):
@@ -403,7 +405,7 @@ class SymfcAlm:
             raise ALMNotInstanciatedError("ALM is not instanciated.")
         self.prepare(maxorder=maxorder, nbody=nbody)
         A, b = self._alm.get_matrix_elements()
-        self.fit(A, b, linear_model=linear_model)
+        self.fit(A, b, alpha=alpha, auto=auto, linear_model=linear_model)
         self._force_constants = self._extract_fc_from_alm(self._alm, maxorder)
 
     def prepare(self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None):
@@ -425,6 +427,8 @@ class SymfcAlm:
         self,
         A: np.ndarray,
         b: np.ndarray,
+        alpha: float = 0.1,
+        auto: bool = True,
         linear_model: LinearModel = LinearModel.LinearRegression,
     ):
         """Fit force cosntants using matrices A and b.
@@ -437,6 +441,13 @@ class SymfcAlm:
             raise ALMNotInstanciatedError("ALM is not instanciated.")
         if linear_model is LinearModel.LinearRegression:
             psi = np.linalg.pinv(A) @ b
+        elif linear_model is LinearModel.RidgeRegression:
+            model = RidgeRegression()
+            if auto:
+                model.run_auto(A, b)
+            else:
+                model.run(A, b, alpha=alpha)
+            psi = model.psi
         else:
             raise RuntimeError("Unsupported linear model.")
         self._alm.set_fc(psi)
