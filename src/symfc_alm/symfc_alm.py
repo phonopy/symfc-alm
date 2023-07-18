@@ -63,6 +63,39 @@ class RidgeRegression:
 
     """
 
+    def __init__(self):
+        """Initialize the RidgeRegression class."""
+        self._psi = None
+        self._coeff = None
+        self._alphas = None
+        self._opt_alpha = None
+        self._errors = None
+
+    @property
+    def psi(self) -> np.ndarray:
+        """Return psi matrix."""
+        return self._psi
+
+    @property
+    def coeff(self) -> np.ndarray:
+        """Return regression coefficients."""
+        return self._coeff
+
+    @property
+    def alphas(self) -> np.ndarray:
+        """Return the list of alpha."""
+        return self._alphas
+
+    @property
+    def opt_alpha(self) -> float:
+        """Return the optimal alpha value."""
+        return self._opt_alpha
+
+    @property
+    def errors(self) -> np.ndarray:
+        """Return the list of errors."""
+        return self._errors
+
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
     """Read displacements-forces dataset.
