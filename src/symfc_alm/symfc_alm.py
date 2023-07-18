@@ -96,6 +96,16 @@ class RidgeRegression:
         """Return the list of errors."""
         return self._errors
 
+    def _fit(self, A: np.ndarray, b: np.ndarray, alpha: float):
+        """Fit force constants.
+
+        Parameters
+        ----------
+        See docstring of RidgeRegression.run() for parameter descriptions.
+
+        """
+        self._coeff = np.linalg.solve(A.T @ A + alpha * np.eye(A.shape[1]), A.T @ b)
+
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
     """Read displacements-forces dataset.
