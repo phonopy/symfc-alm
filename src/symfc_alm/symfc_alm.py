@@ -151,6 +151,29 @@ class RidgeRegression:
         return error
 
 
+def standardize_data(A: np.ndarray):
+    """Standardize the input data.
+
+    Parameters
+    ----------
+    A : ndarray
+        The data matrix.
+
+    Returns
+    -------
+    std : ndarray
+        Standardized data matrix.
+    scale: ndarray
+        Scale factors (standard deviations).
+
+    """
+    mean = A.mean(axis=0, keepdims=True)
+    scale = A.std(axis=0, keepdims=True)
+    scale = np.where(scale < 10 * np.finfo(scale.dtype).eps, 1.0, scale)
+    std = (A - mean) / scale
+    return std, scale[0]
+
+
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
     """Read displacements-forces dataset.
 
