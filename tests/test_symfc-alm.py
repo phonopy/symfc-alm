@@ -6,7 +6,7 @@ from pathlib import Path
 import h5py
 import numpy as np
 
-from symfc_alm import CellDataset, DispForceDataset, SymfcAlm
+from symfc_alm import CellDataset, DispForceDataset, LinearModel, SymfcAlm
 
 cwd = Path(__file__).parent
 
@@ -58,6 +58,30 @@ def test_run_fc2_nacl(
         fc2 = f["force_constants"][:]
 
     np.testing.assert_allclose(sfa.force_constants[0], fc2)
+
+
+def test_run_fc2_nacl_ridge(
+    nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDataset
+):
+    """Test SymfcAlm.run() with NaCl fc2 using ridge regression.
+
+    Note1
+    -----
+    See docstring of test_run_fc2_nacl().
+
+    Note2
+    -----
+    See docstring of test_run_fc2_nacl().
+
+    """
+    with SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0) as sfa:
+        sfa.run(maxorder=1, auto=False, linear_model=LinearModel(2))
+    assert sfa._alm is None
+
+    with h5py.File(cwd / "force_constants_NaCl.hdf5") as f:
+        fc2 = f["force_constants"][:]
+
+    np.testing.assert_allclose(sfa.force_constants[0], fc2, rtol=1e-04, atol=1e-06)
 
 
 def test_run_fc2_fc3_si(
