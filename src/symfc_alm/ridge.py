@@ -9,7 +9,7 @@ def ridge_regression(
     alpha: float,
     auto: bool,
 ):
-    """Conduct RidgeRegression.run().
+    """Conduct RidgeRegression.run() or RidgeRegression.run_auto() function.
 
     Parameters
     ----------

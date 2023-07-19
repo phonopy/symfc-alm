@@ -183,6 +183,10 @@ class SymfcAlm:
         ----------
         maxorder : int
             Upto (maxorder+1)-th order force constants are calculated.
+        alpha: float
+            Hyperparameter for regularization terms.　Use only RidgeRegression.
+        auto: bool
+            When set to ``True``, the optimal alpha is automatically determined.
         nbody : array_like of int
             For example, with maxorder=2,
             - nbody=[2, 3] : 2nd and 3rd order force constants, simultaneously
@@ -227,6 +231,8 @@ class SymfcAlm:
             psi = min_{psi} (A psi - b)
         LinearModel.RidgeRegression:
             psi = min_{psi} (A psi - b)^{2} + alpha(psi)^{2}
+        auto: bool
+            When set to ``True``, the optimal alpha is automatically determined.
 
         """
         if self._alm is None:
