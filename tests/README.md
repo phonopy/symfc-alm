@@ -4,6 +4,9 @@
 
 ```
 pytest
+
+(When computing tests with high memory usage,
+please type "pytest --runbig")
 ```
 
 ## Data
