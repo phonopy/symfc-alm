@@ -31,6 +31,26 @@ def test_run(regression: RidgeRegression, data):
     assert regression.errors is not None
 
 
+def test_run_with_sklearn(regression: RidgeRegression, data):
+    """Test RidgeRegression.run() compared with scikit-learn."""
+    pytest.importorskip("sklearn")
+    from sklearn.linear_model import Ridge
+    from sklearn.preprocessing import StandardScaler
+
+    A, b = data
+    alpha = 0.1
+    # use scikit-learn
+    model_sk = Ridge(alpha=alpha, fit_intercept=False)
+    scaler = StandardScaler().fit(A)
+    model_sk.fit(scaler.transform(A), b)
+    fc_ridge_sk = np.true_divide(model_sk.coef_, scaler.scale_)
+    # use our method
+    model = RidgeRegression()
+    model.run(A, b, alpha=alpha, standardize=True)
+    fc_ridge = model.psi
+    np.testing.assert_allclose(fc_ridge_sk, fc_ridge)
+
+
 def test_run_auto(regression: RidgeRegression, data):
     """Test RidgeRegression.run_auto()."""
     A, b = data
