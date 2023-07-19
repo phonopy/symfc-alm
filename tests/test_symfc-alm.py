@@ -5,6 +5,7 @@ from pathlib import Path
 
 import h5py
 import numpy as np
+import pytest
 
 from symfc_alm import CellDataset, DispForceDataset, LinearModel, SymfcAlm
 
@@ -60,6 +61,7 @@ def test_run_fc2_nacl(
     np.testing.assert_allclose(sfa.force_constants[0], fc2)
 
 
+@pytest.mark.big
 def test_run_fc2_nacl_ridge(
     nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDataset
 ):
