@@ -208,21 +208,19 @@ class RidgeRegression:
 
         """
         b_pred = self._predict(A)
-        n = A.shape[0]
-        ATA = A.T @ A
-        identity = np.eye(A.shape[1])
-        error = 0.0
+        AtA = A.T @ A + alpha * np.eye(A.shape[1])
+        U, D, Ut = np.linalg.svd(AtA)
+        D_inv_sqrt = np.diag(1 / np.sqrt(D))
+        AUD_inv_sqrt = np.dot(A, np.dot(U, D_inv_sqrt))
 
+        n = AUD_inv_sqrt.shape[0]  # number of rows
+        error = 0.0
         for j in range(n):
-            Aj = A[j]
-            AjT = Aj.reshape(-1, 1)
-            ATA_inv_AjT = np.linalg.solve(ATA + alpha * identity, AjT)
-            Hj = A @ ATA_inv_AjT
-            beta_j = Hj[j]
+            beta_j = np.sum(np.dot(AUD_inv_sqrt[j, :], AUD_inv_sqrt[j, :]))  # H[j,j]
             error += ((b[j] - b_pred[j]) / (1 - beta_j)) ** 2
         error /= n
 
-        return error[0]
+        return error
 
 
 def standardize_data(A: np.ndarray):
