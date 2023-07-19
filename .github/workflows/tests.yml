@@ -1,8 +1,6 @@
 name: symfc-alm test using conda-forge environment and ALM
 
-on:
-  pull_request:
-    branches: [ develop ]
+on: push
 
 jobs:
   build-linux:
