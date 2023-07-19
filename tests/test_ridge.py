@@ -3,13 +3,8 @@
 import numpy as np
 import pytest
 
-from symfc_alm import (
-    CellDataset,
-    DispForceDataset,
-    RidgeRegression,
-    SymfcAlm,
-    standardize_data,
-)
+from symfc_alm import CellDataset, DispForceDataset, SymfcAlm
+from symfc_alm.ridge import RidgeRegression, standardize_data
 
 
 @pytest.fixture
