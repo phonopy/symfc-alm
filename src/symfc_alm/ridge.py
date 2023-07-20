@@ -64,13 +64,44 @@ class RidgeRegression:
 
     """
 
-    def __init__(self):
-        """Initialize the RidgeRegression class."""
+    def __init__(self, A: np.ndarray, b: np.ndarray, standardize: bool = True):
+        """Initialize the RidgeRegression class.
+
+        Parameters
+        ----------
+        A : ndarray
+            Matrix A, derived from displacements.
+            shape=(3 * num_atoms * ndata, num_fc)
+        b : ndarray
+            Vector b, derived from atomic forces.
+            shape=(3 * num_atoms * ndata,)
+
+        """
         self._psi = None
         self._coeff = None
         self._alphas = None
         self._opt_alpha = None
         self._errors = None
+        self.initialize(A, b, standardize)
+
+    def initialize(self, A: np.ndarray, b: np.ndarray, standardize: bool = True):
+        """Initialize the input values.
+
+        Parameters
+        ----------
+        See docstring of RidgeRegression().__init__() for parameter descriptions.
+
+        """
+        if standardize:
+            self._standardize = True
+            A, self._scale = standardize_data(A)
+        else:
+            self._standardize = False
+            self._scale = None
+        self._A = A
+        self._b = b
+        AtA = A.T @ A
+        self.__D, self.__U = np.linalg.eigh(AtA)
 
     @property
     def psi(self) -> np.ndarray:
@@ -97,9 +128,7 @@ class RidgeRegression:
         """Return the list of errors."""
         return self._errors
 
-    def run(
-        self, A: np.ndarray, b: np.ndarray, alpha: float = 0.1, standardize: bool = True
-    ):
+    def run(self, alpha: float = 0.1):
         """Fit force constants using a specific hyperparameter.
 
         Parameters
@@ -116,22 +145,11 @@ class RidgeRegression:
             When set to ``True``, standardize the input matrix A.
 
         """
-        if standardize:
-            A, scale = standardize_data(A)
+        self._fit(alpha)
+        self._errors = np.array([self._calc_error(alpha)])
+        self._psi = trans_prestandardize(self._coeff, self._scale, self._standardize)
 
-        self._fit(A, b, alpha)
-        self._errors = np.array([self._calc_error(A, b, alpha)])
-        self._psi = trans_prestandardize(self._coeff, scale, standardize)
-
-    def run_auto(
-        self,
-        A: np.ndarray,
-        b: np.ndarray,
-        standardize: bool = True,
-        min_alpha: int = -6,
-        max_alpha: int = 1,
-        n_alphas: int = 100,
-    ):
+    def run_auto(self, min_alpha: int = -6, max_alpha: int = 1, n_alphas: int = 3):
         """Fit force constants with an optimized hyperparameter.
 
         Parameters
@@ -147,20 +165,17 @@ class RidgeRegression:
             The number of divisions for hyperparameters.
 
         """
-        if standardize:
-            A, scale = standardize_data(A)
-
         self._alphas = np.logspace(max_alpha, min_alpha, num=n_alphas)
         self._errors = np.zeros(len(self._alphas))
         for i, alpha in enumerate(self._alphas):
-            self._fit(A, b, alpha)
-            self._errors[i] = self._calc_error(A, b, alpha)
+            self._fit(alpha)
+            self._errors[i] = self._calc_error(alpha)
 
         self._opt_alpha = self._alphas[np.argmin(self._errors)]
-        self._fit(A, b, self._opt_alpha)
-        self._psi = trans_prestandardize(self._coeff, scale, standardize)
+        self._fit(self._opt_alpha)
+        self._psi = trans_prestandardize(self._coeff, self._scale, self._standardize)
 
-    def _fit(self, A: np.ndarray, b: np.ndarray, alpha: float):
+    def _fit(self, alpha: float):
         """Fit force constants.
 
         Parameters
@@ -168,7 +183,8 @@ class RidgeRegression:
         See docstring of RidgeRegression.run() for parameter descriptions.
 
         """
-        self._coeff = np.linalg.solve(A.T @ A + alpha * np.eye(A.shape[1]), A.T @ b)
+        D_alpha_inv = np.diag(1 / (self.__D + alpha))
+        self._coeff = self.__U @ D_alpha_inv @ self.__U.T @ self._A.T @ self._b
 
     def _predict(self, A: np.ndarray):
         """Generate predictions from fitted parameters.
@@ -185,7 +201,7 @@ class RidgeRegression:
         """
         return A @ self._coeff
 
-    def _calc_error(self, A: np.ndarray, b: np.ndarray, alpha: float):
+    def _calc_error(self, alpha: float):
         r"""Analytically calculate leave-one-out cross validation (LOOCV) error.
 
         The LOOCV error is calculated as:
@@ -207,17 +223,15 @@ class RidgeRegression:
             The mean squared error calculated by LOOCV.
 
         """
-        b_pred = self._predict(A)
-        AtA = A.T @ A + alpha * np.eye(A.shape[1])
-        U, D, Ut = np.linalg.svd(AtA)
-        D_inv_sqrt = np.diag(1 / np.sqrt(D))
-        AUD_inv_sqrt = np.dot(A, np.dot(U, D_inv_sqrt))
+        b_pred = self._predict(self._A)
+        D_inv_sqrt = np.diag(1 / np.sqrt(self.__D + alpha))
+        AUD_inv_sqrt = np.dot(self._A, np.dot(self.__U, D_inv_sqrt))
 
         n = AUD_inv_sqrt.shape[0]  # number of rows
         error = 0.0
         for j in range(n):
-            beta_j = np.sum(np.dot(AUD_inv_sqrt[j, :], AUD_inv_sqrt[j, :]))  # H[j,j]
-            error += ((b[j] - b_pred[j]) / (1 - beta_j)) ** 2
+            beta_j = np.sum(np.dot(AUD_inv_sqrt[j, :], AUD_inv_sqrt[j, :]))  # H[i, i]
+            error += ((self._b[j] - b_pred[j]) / (1 - beta_j)) ** 2
         error /= n
 
         return error
