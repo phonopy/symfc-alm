@@ -25,11 +25,11 @@ def ridge_regression(
         When set to ``True``, the optimal alpha is automatically determined.
 
     """
-    model = RidgeRegression()
+    model = RidgeRegression(A, b)
     if auto:
-        model.run_auto(A, b)
+        model.run_auto()
     else:
-        model.run(A, b, alpha=alpha)
+        model.run(alpha=alpha)
     psi = model.psi
     return psi
 
