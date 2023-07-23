@@ -4,7 +4,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-from symfc_alm import CellDataset, DispForceDataset, read_dataset
+from symfc_alm import CellDataset, DispForceDataset, SymfcAlm, read_dataset
 
 cwd = Path(__file__).parent
 
@@ -111,3 +111,11 @@ def si_111_structure() -> CellDataset:
 def si_111_dataset() -> DispForceDataset:
     """Return Si 1x1x1 dataset."""
     return read_dataset(cwd / "FORCE_SETS_Si111.xz")
+
+
+@pytest.fixture(scope="session")
+def si_111_Ab(si_111_dataset: DispForceDataset, si_111_structure: CellDataset):
+    """Using Si fc3, generate matrix A from displacements and vector b from forces."""
+    with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
+        A, b = sfa.get_matrix_elements(maxorder=2)
+    return A, b
