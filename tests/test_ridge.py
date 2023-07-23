@@ -110,6 +110,39 @@ def test_calc_error(regression: RidgeRegression):
     assert isinstance(error, float)
 
 
+def test_calc_error_with_sklearn(data):
+    """Test RidgeRegression._calc_error() compared with scikit-learn."""
+    pytest.importorskip("sklearn")
+    from sklearn.linear_model import Ridge
+    from sklearn.model_selection import LeaveOneOut
+    from sklearn.preprocessing import StandardScaler
+
+    alpha = 0.1
+    A, b = data
+    A = A[:1000]
+    b = b[:1000]
+    sc = StandardScaler()
+    # use scikit-learn
+    ridge_sk = Ridge(alpha=alpha, fit_intercept=False)
+    loocv = LeaveOneOut()
+    scaler = sc.fit(A)
+    A_std = scaler.transform(A)
+    errors = []
+    for train_idx, test_idx in loocv.split(A_std):
+        A_train, A_test = A_std[train_idx], A_std[test_idx]
+        b_train, b_test = b[train_idx], b[test_idx]
+        ridge_sk.fit(A_train, b_train)
+        b_pred = ridge_sk.predict(A_test)
+        error = np.mean((b_pred - b_test) ** 2)
+        errors.append(error)
+    mean_error_sk = sum(errors) / len(errors)
+    # use our method
+    regression = RidgeRegression(A, b, standardize=True)
+    regression.run(alpha=alpha)
+    mean_error = regression.errors[0]
+    np.testing.assert_allclose(mean_error, mean_error_sk)
+
+
 def test_standardize_data(
     si_111_dataset: DispForceDataset, si_111_structure: CellDataset, data
 ):
