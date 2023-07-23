@@ -75,6 +75,8 @@ class RidgeRegression:
         b : ndarray
             Vector b, derived from atomic forces.
             shape=(3 * num_atoms * ndata,)
+        standardize: bool, optional
+            When set to ``True``, standardize the input matrix A.
 
         """
         self._psi = None
@@ -133,16 +135,8 @@ class RidgeRegression:
 
         Parameters
         ----------
-        A : ndarray
-            Matrix A, derived from displacements.
-            shape=(3 * num_atoms * ndata, num_fc)
-        b : ndarray
-            Vector b, derived from atomic forces.
-            shape=(3 * num_atoms * ndata,)
         alpha: float
             Hyperparameter for regularization terms.
-        standardize: bool, optional
-            When set to ``True``, standardize the input matrix A.
 
         """
         self._fit(alpha)
@@ -154,9 +148,6 @@ class RidgeRegression:
 
         Parameters
         ----------
-        A : See docstring of RidgeRegression.run().
-        b : See docstring of RidgeRegression.run().
-        standardize: See docstring of RidgeRegression.run().
         min_alpha: int
             Minimum value of hyperparameter alpha on a logarithmic scale.
         max_alpha: int
@@ -180,7 +171,8 @@ class RidgeRegression:
 
         Parameters
         ----------
-        See docstring of RidgeRegression.run() for parameter descriptions.
+        alpha: float
+            Hyperparameter for regularization terms.
 
         """
         D_alpha_inv = np.diag(1 / (self.__D + alpha))
@@ -191,7 +183,7 @@ class RidgeRegression:
 
         Parameters
         ----------
-        A : See docstring of RidgeRegression.run().
+        A : See docstring of RidgeRegression.__init__().
 
         Returns
         -------
@@ -215,7 +207,8 @@ class RidgeRegression:
 
         Parameters
         ----------
-        See docstring of RidgeRegression.run() for parameter descriptions.
+        alpha: float
+            Hyperparameter for regularization terms.
 
         Returns
         -------
