@@ -89,7 +89,7 @@ def test_fit(si_111_Ab):
     alpha = 0.1
     A, b = si_111_Ab
     regression = RidgeRegression(A, b, standardize=True)
-    regression._fit(alpha)
+    regression._fit(alpha, debias=False)
     assert regression.coeff is not None
 
 
@@ -98,7 +98,7 @@ def test_predict(si_111_Ab):
     alpha = 0.1
     A, b = si_111_Ab
     regression = RidgeRegression(A, b, standardize=True)
-    regression._fit(alpha)
+    regression._fit(alpha, debias=False)
     prediction = regression._predict(A)
     np.testing.assert_array_equal(prediction.shape, b.shape)
 
@@ -108,7 +108,7 @@ def test_calc_error(si_111_Ab):
     alpha = 0.1
     A, b = si_111_Ab
     regression = RidgeRegression(A, b, standardize=True)
-    regression._fit(alpha)
+    regression._fit(alpha, debias=False)
     error = regression._calc_error(alpha)
     assert isinstance(error, float)
 
