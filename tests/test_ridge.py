@@ -15,13 +15,13 @@ def test_ridge_regression(si_111_Ab):
     assert psi is not None
 
 
-# @pytest.mark.big
-# def test_ridge_regression_deficient(aln_332_Ab):
-#     """Test ridge_regression()"""
-#     alpha = 0.1
-#     A, b = aln_332_Ab
-#     psi = ridge_regression(A, b, alpha, auto=False)
-#     assert psi is not None
+@pytest.mark.big
+def test_ridge_regression_deficient(aln_332_Ab):
+    """Test ridge_regression()"""
+    alpha = 0.1
+    A, b = aln_332_Ab
+    psi = ridge_regression(A, b, alpha, auto=False)
+    assert psi is not None
 
 
 def test_ridge_regression_with_sklearn(si_111_Ab):
