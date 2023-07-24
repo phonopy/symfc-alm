@@ -13,6 +13,8 @@ import numpy as np
 import numpy.typing as npt
 from alm import ALM
 
+from symfc_alm.ridge import ridge_regression
+
 
 class ALMNotInstanciatedError(RuntimeError):
     """Error of that ALM is not instanciated."""
@@ -30,6 +32,7 @@ class LinearModel(Enum):
     """Linear model used for fitting force constants."""
 
     LinearRegression = 1
+    RidgeRegression = 2
 
 
 def read_dataset(fp: Union[str, bytes, os.PathLike, io.IOBase]):
@@ -169,6 +172,8 @@ class SymfcAlm:
     def run(
         self,
         maxorder: int = 2,
+        alpha: float = 0.1,
+        auto: bool = True,
         nbody: Optional[npt.ArrayLike] = None,
         linear_model: LinearModel = LinearModel.LinearRegression,
     ):
@@ -178,6 +183,10 @@ class SymfcAlm:
         ----------
         maxorder : int
             Upto (maxorder+1)-th order force constants are calculated.
+        alpha: float
+            Hyperparameter for regularization terms.　Use only RidgeRegression.
+        auto: bool
+            When set to ``True``, the optimal alpha is automatically determined.
         nbody : array_like of int
             For example, with maxorder=2,
             - nbody=[2, 3] : 2nd and 3rd order force constants, simultaneously
@@ -190,7 +199,7 @@ class SymfcAlm:
             raise ALMNotInstanciatedError("ALM is not instanciated.")
         self.prepare(maxorder=maxorder, nbody=nbody)
         A, b = self._alm.get_matrix_elements()
-        self.fit(A, b, linear_model=linear_model)
+        self.fit(A, b, alpha=alpha, auto=auto, linear_model=linear_model)
         self._force_constants = self._extract_fc_from_alm(self._alm, maxorder)
 
     def prepare(self, maxorder: int = 2, nbody: Optional[npt.ArrayLike] = None):
@@ -212,18 +221,26 @@ class SymfcAlm:
         self,
         A: np.ndarray,
         b: np.ndarray,
+        alpha: float = 0.1,
+        auto: bool = True,
         linear_model: LinearModel = LinearModel.LinearRegression,
     ):
         """Fit force cosntants using matrices A and b.
 
         LinearModel.LinearRegression:
             psi = min_{psi} (A psi - b)
+        LinearModel.RidgeRegression:
+            psi = min_{psi} (A psi - b)^{2} + alpha(psi)^{2}
+        auto: bool
+            When set to ``True``, the optimal alpha is automatically determined.
 
         """
         if self._alm is None:
             raise ALMNotInstanciatedError("ALM is not instanciated.")
         if linear_model is LinearModel.LinearRegression:
             psi = np.linalg.pinv(A) @ b
+        elif linear_model is LinearModel.RidgeRegression:
+            psi = ridge_regression(A, b, alpha, auto)
         else:
             raise RuntimeError("Unsupported linear model.")
         self._alm.set_fc(psi)

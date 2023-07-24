@@ -4,6 +4,7 @@
 
 ```
 pytest
+(When the "--runbig" option is set, it will also execute time-consuming tests.)
 ```
 
 ## Data

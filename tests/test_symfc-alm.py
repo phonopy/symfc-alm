@@ -5,8 +5,9 @@ from pathlib import Path
 
 import h5py
 import numpy as np
+import pytest
 
-from symfc_alm import CellDataset, DispForceDataset, SymfcAlm
+from symfc_alm import CellDataset, DispForceDataset, LinearModel, SymfcAlm
 
 cwd = Path(__file__).parent
 
@@ -60,6 +61,30 @@ def test_run_fc2_nacl(
     np.testing.assert_allclose(sfa.force_constants[0], fc2)
 
 
+def test_run_fc2_nacl_ridge(
+    nacl_222_dataset: DispForceDataset, nacl_222_structure: CellDataset
+):
+    """Test SymfcAlm.run() with NaCl fc2 using ridge regression.
+
+    Note1
+    -----
+    See docstring of test_run_fc2_nacl().
+
+    Note2
+    -----
+    See docstring of test_run_fc2_nacl().
+
+    """
+    with SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0) as sfa:
+        sfa.run(maxorder=1, auto=False, linear_model=LinearModel(2))
+    assert sfa._alm is None
+
+    with h5py.File(cwd / "force_constants_NaCl.hdf5") as f:
+        fc2 = f["force_constants"][:]
+
+    np.testing.assert_allclose(sfa.force_constants[0], fc2, rtol=1e-04, atol=1e-06)
+
+
 def test_run_fc2_fc3_si(
     si_111_dataset: DispForceDataset, si_111_structure: CellDataset
 ):
@@ -93,6 +118,104 @@ def test_run_fc2_fc3_si(
     assert fc3.shape == (natom, natom, natom, 3, 3, 3)
     np.testing.assert_allclose(sfa.force_constants[0], fc2)
     np.testing.assert_allclose(sfa.force_constants[1], fc3)
+
+
+def test_run_fc2_fc3_si_ridge(
+    si_111_dataset: DispForceDataset, si_111_structure: CellDataset
+):
+    """Test SymfcAlm.run() with Si fc2 and fc3 simultaneously using ridge regression.
+
+    Note1
+    -----
+    See docstring of test_run_fc2_fc3_si().
+
+    Note2
+    -----
+    See docstring of test_run_fc2_fc3_si().
+
+    """
+    with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
+        sfa.run(maxorder=2, auto=False, linear_model=LinearModel(2))
+    assert sfa._alm is None
+    with h5py.File(cwd / "fc2_Si111.hdf5") as f:
+        fc2 = f["force_constants"][:]
+    with h5py.File(cwd / "fc3_Si111.hdf5") as f:
+        fc3 = f["fc3"][:]
+
+    natom = len(si_111_structure)
+    assert fc2.shape == (natom, natom, 3, 3)
+    assert fc3.shape == (natom, natom, natom, 3, 3, 3)
+    np.testing.assert_allclose(sfa.force_constants[0], fc2, rtol=1e-05, atol=1e-08)
+    np.testing.assert_allclose(sfa.force_constants[1], fc3, rtol=1e-05, atol=1e-08)
+
+
+@pytest.mark.big
+def test_run_fc2_fc3_aln_ridge(
+    aln_332_dataset: DispForceDataset, aln_332_structure: CellDataset
+):
+    """Test SymfcAlm.run() with AlN fc2 and fc3 simultaneously using ridge regression.
+
+    Note1
+    -----
+    Fc2 and FC3 were written in hdf5 by:
+
+       with h5py.File(cwd / "fc2_Si111.hdf5", "w") as w:
+           w.create_dataset("force_constants", data=fcs[0], compression="gzip")
+       with h5py.File(cwd / "fc3_Si111.hdf5", "w") as w:
+           w.create_dataset("fc3", data=fcs[1], compression="gzip")
+
+    """
+    with SymfcAlm(aln_332_dataset, aln_332_structure, log_level=0) as sfa:
+        sfa.run(maxorder=2, auto=False, linear_model=LinearModel(2))
+    assert sfa._alm is None
+    with h5py.File(cwd / "fc2_AlN332.hdf5") as f:
+        fc2 = f["force_constants"][:]
+
+    fc3 = np.array(
+        [
+            [
+                [
+                    [-2.81971183e00, 8.31996850e-01, -4.16968565e-01],
+                    [-1.72284033e-01, 5.44724825e-01, 1.19136057e-01],
+                    [6.16837381e-02, 1.54415871e-01, 6.30084580e-01],
+                ],
+                [
+                    [-1.72284033e-01, 5.44724825e-01, 1.19136057e-01],
+                    [7.98975341e-01, 4.80525190e-01, 7.48156218e-02],
+                    [-2.29247854e-02, 9.22777178e-04, 1.20085603e-01],
+                ],
+                [
+                    [6.16837381e-02, 1.54415871e-01, 6.30084580e-01],
+                    [-2.29247854e-02, 9.22777178e-04, 1.20085603e-01],
+                    [7.78975615e-01, 2.22493183e-01, -3.45891988e-01],
+                ],
+            ],
+            [
+                [
+                    [2.81971183e00, 8.31996850e-01, -4.16968565e-01],
+                    [-1.72284033e-01, -5.44724825e-01, -1.19136057e-01],
+                    [6.16837381e-02, -1.54415871e-01, -6.30084580e-01],
+                ],
+                [
+                    [-1.72284033e-01, -5.44724825e-01, -1.19136057e-01],
+                    [-7.98975341e-01, 4.80525190e-01, 7.48156218e-02],
+                    [2.29247854e-02, 9.22777178e-04, 1.20085603e-01],
+                ],
+                [
+                    [6.16837381e-02, -1.54415871e-01, -6.30084580e-01],
+                    [2.29247854e-02, 9.22777178e-04, 1.20085603e-01],
+                    [-7.78975615e-01, 2.22493183e-01, -3.45891988e-01],
+                ],
+            ],
+        ]
+    )
+
+    natom = len(aln_332_structure)
+    assert fc2.shape == (natom, natom, 3, 3)
+    np.testing.assert_allclose(sfa.force_constants[0], fc2, rtol=1e-05, atol=1e-08)
+    np.testing.assert_allclose(
+        sfa.force_constants[1][0][0][1:3], fc3, rtol=1e-05, atol=1e-08
+    )
 
 
 def test_get_matrix_elements_fc2_si(

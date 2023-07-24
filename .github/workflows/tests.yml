@@ -1,6 +1,7 @@
 name: symfc-alm test using conda-forge environment and ALM
 
 on:
+  push:
   pull_request:
     branches: [ develop ]
 
@@ -26,7 +27,7 @@ jobs:
       run: |
         conda activate test
         conda install --yes -c conda-forge python=${{ matrix.python-version }}
-        conda install --yes -c conda-forge alm pytest codecov pytest-cov h5py
+        conda install --yes -c conda-forge alm scikit-learn pytest codecov pytest-cov h5py
     - name: Setup symfc
       run: |
         conda activate test
