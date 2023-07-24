@@ -130,20 +130,28 @@ class RidgeRegression:
         """Return the list of errors."""
         return self._errors
 
-    def run(self, alpha: float = 0.1):
+    def run(self, alpha: float = 0.1, debias: bool = False):
         """Fit force constants using a specific hyperparameter.
 
         Parameters
         ----------
         alpha: float
             Hyperparameter for regularization terms.
+        debias: bool
+            When set to ``True``, correcting for bias from ridge regression estimators.
 
         """
-        self._fit(alpha)
+        self._fit(alpha, debias)
         self._errors = np.array([self._calc_error(alpha)])
         self._psi = trans_prestandardize(self._coeff, self._scale, self._standardize)
 
-    def run_auto(self, min_alpha: int = -6, max_alpha: int = 1, n_alphas: int = 3):
+    def run_auto(
+        self,
+        min_alpha: int = -6,
+        max_alpha: int = 1,
+        n_alphas: int = 3,
+        debias: bool = False,
+    ):
         """Fit force constants with an optimized hyperparameter.
 
         Parameters
@@ -154,36 +162,50 @@ class RidgeRegression:
             Maximum value of hyperparameter alpha on a logarithmic scale.
         n_alphas: int
             The number of divisions for hyperparameters.
+        debias: bool
+            When set to ``True``, correcting for bias from ridge regression estimators.
 
         """
         self._alphas = np.logspace(max_alpha, min_alpha, num=n_alphas)
         self._errors = np.zeros(len(self._alphas))
         for i, alpha in enumerate(self._alphas):
-            self._fit(alpha)
+            self._fit(alpha, debias)
             self._errors[i] = self._calc_error(alpha)
 
         self._opt_alpha = self._alphas[np.argmin(self._errors)]
-        self._fit(self._opt_alpha)
+        self._fit(self._opt_alpha, debias)
         self._psi = trans_prestandardize(self._coeff, self._scale, self._standardize)
 
-    def _fit(self, alpha: float):
+    def _fit(self, alpha: float, debias: bool = False):
         """Fit force constants.
 
         Parameters
         ----------
         alpha: float
             Hyperparameter for regularization terms.
+        debias: bool
+            When set to ``True``, correcting for bias from ridge regression estimators.
+            Formula implemented is based on this paper:
+
+                Ref. 1: Zhang et al. https://arxiv.org/abs/2009.08071
 
         """
         D_alpha_inv = np.diag(1 / (self.__D + alpha))
-        self._coeff = self.__U @ D_alpha_inv @ self.__U.T @ self._A.T @ self._b
+        UDUT = self.__U @ D_alpha_inv @ self.__U.T
+        coeff = UDUT @ self._A.T @ self._b
+        if debias:
+            self._coeff = coeff + alpha * UDUT @ coeff
+        else:
+            self._coeff = coeff
 
     def _predict(self, A: np.ndarray):
         """Generate predictions from fitted parameters.
 
         Parameters
         ----------
-        A : See docstring of RidgeRegression.__init__().
+        A : ndarray
+            Matrix A, derived from displacements.
+            shape=(3 * num_atoms * ndata, num_fc)
 
         Returns
         -------
