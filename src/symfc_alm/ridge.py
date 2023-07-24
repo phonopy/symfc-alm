@@ -176,7 +176,7 @@ class RidgeRegression:
         self._fit(self._opt_alpha, debias)
         self._psi = trans_prestandardize(self._coeff, self._scale, self._standardize)
 
-    def _fit(self, alpha: float, debias: bool = False):
+    def _fit(self, alpha: float, debias: bool):
         """Fit force constants.
 
         Parameters

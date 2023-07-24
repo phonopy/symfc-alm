@@ -3,12 +3,11 @@
 import numpy as np
 import pytest
 
-from symfc_alm import CellDataset, DispForceDataset
 from symfc_alm.ridge import RidgeRegression, ridge_regression, standardize_data
 
 
 def test_ridge_regression(si_111_Ab):
-    """Test ridge_regression()"""
+    """Test ridge_regression()."""
     alpha = 0.1
     A, b = si_111_Ab
     psi = ridge_regression(A, b, alpha, auto=False)
@@ -17,7 +16,7 @@ def test_ridge_regression(si_111_Ab):
 
 @pytest.mark.big
 def test_ridge_regression_deficient(aln_332_Ab):
-    """Test ridge_regression()"""
+    """Test ridge_regression()."""
     alpha = 0.1
     A, b = aln_332_Ab
     psi = ridge_regression(A, b, alpha, auto=False)
@@ -147,9 +146,7 @@ def test_calc_error_with_sklearn(si_111_Ab):
     np.testing.assert_allclose(mean_error, mean_error_sk)
 
 
-def test_standardize_data(
-    si_111_dataset: DispForceDataset, si_111_structure: CellDataset, si_111_Ab
-):
+def test_standardize_data(si_111_Ab):
     """Test standardize_data()."""
     A, _ = si_111_Ab
     std_A, scale = standardize_data(A)
