@@ -8,6 +8,7 @@ def ridge_regression(
     b: np.ndarray,
     alpha: float,
     auto: bool,
+    standardize: bool = True,
 ):
     """Conduct RidgeRegression.run() or RidgeRegression.run_auto() function.
 
@@ -23,9 +24,11 @@ def ridge_regression(
         Hyperparameter for regularization terms.
     auto: bool
         When set to ``True``, the optimal alpha is automatically determined.
+    standardize: bool, optional
+        When set to ``True``, standardize the input matrix A.
 
     """
-    model = RidgeRegression(A, b)
+    model = RidgeRegression(A, b, standardize=standardize)
     if auto:
         model.run_auto()
     else:
