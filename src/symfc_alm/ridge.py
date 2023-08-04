@@ -8,6 +8,7 @@ def ridge_regression(
     b: np.ndarray,
     alpha: float,
     auto: bool,
+    standardize: bool = True,
 ):
     """Conduct RidgeRegression.run() or RidgeRegression.run_auto() function.
 
@@ -23,9 +24,11 @@ def ridge_regression(
         Hyperparameter for regularization terms.
     auto: bool
         When set to ``True``, the optimal alpha is automatically determined.
+    standardize: bool, optional
+        When set to ``True``, standardize the input matrix A.
 
     """
-    model = RidgeRegression(A, b)
+    model = RidgeRegression(A, b, standardize=standardize)
     if auto:
         model.run_auto()
     else:
@@ -102,8 +105,9 @@ class RidgeRegression:
             self._scale = None
         self._A = A
         self._b = b
-        AtA = A.T @ A
-        self.__D, self.__U = np.linalg.eigh(AtA)
+        U, sigma, Vt = np.linalg.svd(A, full_matrices=False)
+        self._V = Vt.T
+        self._R = U @ np.diag(sigma)
 
     @property
     def psi(self) -> np.ndarray:
@@ -130,7 +134,7 @@ class RidgeRegression:
         """Return the list of errors."""
         return self._errors
 
-    def run(self, alpha: float = 0.1, debias: bool = False):
+    def run(self, alpha: float = 0.1, debias: bool = True):
         """Fit force constants using a specific hyperparameter.
 
         Parameters
@@ -142,7 +146,7 @@ class RidgeRegression:
 
         """
         self._fit(alpha, debias)
-        self._errors = np.array([self._calc_error(alpha)])
+        self._errors = np.array([self._calc_error()])
         self._psi = trans_prestandardize(self._coeff, self._scale, self._standardize)
 
     def run_auto(
@@ -150,7 +154,7 @@ class RidgeRegression:
         min_alpha: int = -6,
         max_alpha: int = 1,
         n_alphas: int = 3,
-        debias: bool = False,
+        debias: bool = True,
     ):
         """Fit force constants with an optimized hyperparameter.
 
@@ -170,14 +174,26 @@ class RidgeRegression:
         self._errors = np.zeros(len(self._alphas))
         for i, alpha in enumerate(self._alphas):
             self._fit(alpha, debias)
-            self._errors[i] = self._calc_error(alpha)
+            self._errors[i] = self._calc_error()
 
         self._opt_alpha = self._alphas[np.argmin(self._errors)]
         self._fit(self._opt_alpha, debias)
         self._psi = trans_prestandardize(self._coeff, self._scale, self._standardize)
 
     def _fit(self, alpha: float, debias: bool):
-        """Fit force constants.
+        r"""Fit force constants.
+
+        The regression coefficients for Ridge regression are calculated
+        using singular value decomposition as follows:
+
+        V(R^{T}R + \alpha I)^{-1}R^{T}b
+
+        where R is R = U @ sigma, and U, sigma, V are obtained from the
+        singular value decomposition of Matrix A.
+
+        Formula implemented is based on this paper:
+
+            Ref. 1: Wessel N. van Wieringen. https://arxiv.org/abs/1509.09169
 
         Parameters
         ----------
@@ -187,14 +203,14 @@ class RidgeRegression:
             When set to ``True``, correcting for bias from ridge regression estimators.
             Formula implemented is based on this paper:
 
-                Ref. 1: Zhang et al. https://arxiv.org/abs/2009.08071
+                Ref. 2: Zhang et al. https://arxiv.org/abs/2009.08071
 
         """
-        D_alpha_inv = np.diag(1 / (self.__D + alpha))
-        UDUT = self.__U @ D_alpha_inv @ self.__U.T
-        coeff = UDUT @ self._A.T @ self._b
+        self._RTR_inv = self._calc_RTR_inv(alpha)
+        coeff = self._V @ self._RTR_inv @ self._R.T @ self._b
         if debias:
-            self._coeff = coeff + alpha * UDUT @ coeff
+            AtA_inv = self._V @ self._RTR_inv @ self._V.T
+            self._coeff = coeff + alpha * AtA_inv @ coeff
         else:
             self._coeff = coeff
 
@@ -215,7 +231,7 @@ class RidgeRegression:
         """
         return A @ self._coeff
 
-    def _calc_error(self, alpha: float):
+    def _calc_error(self, alpha: float = None):
         r"""Analytically calculate leave-one-out cross validation (LOOCV) error.
 
         The LOOCV error is calculated as:
@@ -225,7 +241,14 @@ class RidgeRegression:
 
         where beta is the diagonal component of
 
-        H = A(A^{T}A + \alpha I)^{-1}A^{T}
+        H = R(R^{T}R + \alpha I)^{-1}R^{T}
+
+        Here, R is R = U @ sigma, and U, sigma are obtained from the
+        singular value decomposition of Matrix A.
+
+        Formula implemented is based on this paper:
+
+            Ref. 1: Wessel N. van Wieringen. https://arxiv.org/abs/1509.09169
 
         Parameters
         ----------
@@ -238,18 +261,42 @@ class RidgeRegression:
             The mean squared error calculated by LOOCV.
 
         """
+        if alpha is not None:
+            self._RTR_inv = self._calc_RTR_inv(alpha)
         b_pred = self._predict(self._A)
-        D_inv_sqrt = np.diag(1 / np.sqrt(self.__D + alpha))
-        AUD_inv_sqrt = np.dot(self._A, np.dot(self.__U, D_inv_sqrt))
-
-        n = AUD_inv_sqrt.shape[0]  # number of rows
-        error = 0.0
-        for j in range(n):
-            beta_j = np.sum(np.dot(AUD_inv_sqrt[j, :], AUD_inv_sqrt[j, :]))  # H[i, i]
-            error += ((self._b[j] - b_pred[j]) / (1 - beta_j)) ** 2
+        H = self._R @ self._RTR_inv @ self._R.T
+        n = H.shape[0]
+        error = 0
+        for i in range(n):
+            error += ((self._b[i] - b_pred[i]) / (1 - H[i, i])) ** 2
         error /= n
 
         return error
+
+    def _calc_RTR_inv(self, alpha: float):
+        r"""Return the inverse of a specific matrix.
+
+        The inverse is calculated for the following equation:
+
+        (R^{T}R + \alpha I)^{-1}
+
+        where R is R = U @ sigma, and U, sigma are obtained from the
+        singular value decomposition (SVD) of Matrix A.
+
+        Parameters
+        ----------
+        alpha: float
+            Hyperparameter for the regularization term.
+
+        Returns
+        -------
+        RTR_inv : np.ndarray
+            The inverse of the matrix (R^T @ R + alpha * I).
+        """
+        RTR = self._R.T @ self._R
+        RTR[np.diag_indices_from(RTR)] += alpha
+        RTR_inv = np.linalg.inv(RTR)
+        return RTR_inv
 
 
 def standardize_data(A: np.ndarray):
