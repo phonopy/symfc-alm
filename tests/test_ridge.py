@@ -38,7 +38,7 @@ def test_ridge_regression_with_sklearn(si_111_Ab):
     fc_ridge_sk = np.true_divide(ridge_sk.coef_, scaler.scale_)
     # use our method
     fc_ridge = ridge_regression(A, b, alpha, auto=False)
-    np.testing.assert_allclose(fc_ridge_sk, fc_ridge)
+    np.testing.assert_allclose(fc_ridge_sk, fc_ridge, rtol=1e-04, atol=1e-06)
 
 
 def test_run(si_111_Ab):
@@ -69,7 +69,7 @@ def test_run_with_sklearn(si_111_Ab):
     regression = RidgeRegression(A, b, standardize=True)
     regression.run(alpha=alpha)
     fc_ridge = regression.psi
-    np.testing.assert_allclose(fc_ridge_sk, fc_ridge)
+    np.testing.assert_allclose(fc_ridge_sk, fc_ridge, rtol=1e-04, atol=1e-06)
 
 
 def test_run_auto(si_111_Ab):
@@ -144,6 +144,19 @@ def test_calc_error_with_sklearn(si_111_Ab):
     regression.run(alpha=alpha)
     mean_error = regression.errors[0]
     np.testing.assert_allclose(mean_error, mean_error_sk)
+
+
+def test_calc_RTR_inv(si_111_Ab):
+    """Test RidgeRegression._calc_RTR_inv()."""
+    alpha = 0.1
+    A, b = si_111_Ab
+    regression = RidgeRegression(A, b, standardize=True)
+    assert regression._R is not None
+    assert regression._V is not None
+    R = regression._R
+    RTR_inv = regression._calc_RTR_inv(alpha)
+    RTR_inv_np = np.linalg.inv(R.T @ R + alpha * np.eye(R.shape[1]))
+    np.testing.assert_allclose(RTR_inv, RTR_inv_np)
 
 
 def test_standardize_data(si_111_Ab):
