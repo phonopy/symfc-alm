@@ -207,9 +207,12 @@ class RidgeRegression:
 
         """
         self._RTR_inv = self._calc_RTR_inv(alpha)
-        coeff = self._V @ self._RTR_inv @ self._R.T @ self._b
+        coeff = self._R.T @ self._b
+        coeff = self._RTR_inv @ coeff
+        coeff = self._V @ coeff
         if debias:
-            AtA_inv = self._V @ self._RTR_inv @ self._V.T
+            AtA_inv = self._RTR_inv @ self._V.T
+            AtA_inv = self._V @ AtA_inv
             self._coeff = coeff + alpha * AtA_inv @ coeff
         else:
             self._coeff = coeff
@@ -264,7 +267,8 @@ class RidgeRegression:
         if alpha is not None:
             self._RTR_inv = self._calc_RTR_inv(alpha)
         b_pred = self._predict(self._A)
-        H = self._R @ self._RTR_inv @ self._R.T
+        H = self._RTR_inv @ self._R.T
+        H = self._R @ H
         n = H.shape[0]
         error = 0
         for i in range(n):
