@@ -188,7 +188,7 @@ class RidgeRegression:
 
         V(R^{T}R + \alpha I)^{-1}R^{T}b
 
-        where R is R = U @ Σ, and U, Σ, V are obtained from the
+        where R is R = U @ sigma, and U, sigma, V are obtained from the
         singular value decomposition of Matrix A.
 
         Formula implemented is based on this paper:
@@ -243,7 +243,7 @@ class RidgeRegression:
 
         H = R(R^{T}R + \alpha I)^{-1}R^{T}
 
-        Here, R is R = U @ Σ, and U, Σ are obtained from the
+        Here, R is R = U @ sigma, and U, sigma are obtained from the
         singular value decomposition of Matrix A.
 
         Formula implemented is based on this paper:
@@ -280,7 +280,7 @@ class RidgeRegression:
 
         (R^{T}R + \alpha I)^{-1}
 
-        where R is R = U @ Σ, and U, Σ are obtained from the
+        where R is R = U @ sigma, and U, sigma are obtained from the
         singular value decomposition (SVD) of Matrix A.
 
         Parameters
