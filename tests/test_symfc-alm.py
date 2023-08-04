@@ -75,11 +75,14 @@ def test_run_fc2_nacl_ridge(
     See docstring of test_run_fc2_nacl().
 
     """
-    with SymfcAlm(nacl_222_dataset, nacl_222_structure, log_level=0) as sfa:
+    dataset = DispForceDataset(
+        nacl_222_dataset.displacements[:50], nacl_222_dataset.forces[:50]
+    )
+    with SymfcAlm(dataset, nacl_222_structure, log_level=2) as sfa:
         sfa.run(maxorder=1, auto=False, linear_model=LinearModel(2))
     assert sfa._alm is None
 
-    with h5py.File(cwd / "force_constants_NaCl.hdf5") as f:
+    with h5py.File(cwd / "force_constants_NaCl_50sets.hdf5") as f:
         fc2 = f["force_constants"][:]
 
     np.testing.assert_allclose(sfa.force_constants[0], fc2, rtol=1e-04, atol=1e-06)
