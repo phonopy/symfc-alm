@@ -84,6 +84,18 @@ def test_run_auto(si_111_Ab):
     assert regression.errors is not None
 
 
+def test_initialize(si_111_Ab):
+    """Test RidgeRegression.initialize()."""
+    A, b = si_111_Ab
+    regression = RidgeRegression(A, b, standardize=True)
+    assert regression._standardize is not None
+    assert regression._scale is not None
+    assert regression._A is not None
+    assert regression._b is not None
+    assert regression._V is not None
+    assert regression._R is not None
+
+
 def test_fit(si_111_Ab):
     """Test RidgeRegression._fit()."""
     alpha = 0.1
@@ -151,8 +163,6 @@ def test_calc_RTR_inv(si_111_Ab):
     alpha = 0.1
     A, b = si_111_Ab
     regression = RidgeRegression(A, b, standardize=True)
-    assert regression._R is not None
-    assert regression._V is not None
     R = regression._R
     RTR_inv = regression._calc_RTR_inv(alpha)
     RTR_inv_np = np.linalg.inv(R.T @ R + alpha * np.eye(R.shape[1]))
