@@ -261,7 +261,7 @@ class RidgeRegression:
             The mean squared error calculated by LOOCV.
 
         """
-        if alpha:
+        if alpha is not None:
             self._RTR_inv = self._calc_RTR_inv(alpha)
         b_pred = self._predict(self._A)
         H = self._R @ self._RTR_inv @ self._R.T
