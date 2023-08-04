@@ -293,9 +293,9 @@ class RidgeRegression:
         RTR_inv : np.ndarray
             The inverse of the matrix (R^T @ R + alpha * I).
         """
-        B = self._R.T @ self._R
-        B[np.diag_indices_from(B)] += alpha
-        RTR_inv = np.linalg.inv(B)
+        RTR = self._R.T @ self._R
+        RTR[np.diag_indices_from(RTR)] += alpha
+        RTR_inv = np.linalg.inv(RTR)
         return RTR_inv
 
 
