@@ -34,8 +34,8 @@ path = <path-to-symfc-alm>
 si_111_dataset = read_dataset(os.path.join(path, "/FORCE_SETS_Si111.xz"))
 
 with SymfcAlm(si_111_dataset, si_111_structure, log_level=0) as sfa:
-		# When set to maxorder=2, it calculates the force constants up to the 3rd order.
-		# When set to Linearmode(1), it uses the least squares method.
+    # When set to maxorder=2, it calculates the force constants up to the 3rd order.
+    # When set to Linearmode(1), it uses the least squares method.
     sfa.run(maxorder=2, linear_model=LinearModel(1))
     fc2 = sfa.force_constants[0]
     fc3 = sfa.force_constants[1]
