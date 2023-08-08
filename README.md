@@ -5,7 +5,7 @@ Github: [https://github.com/phonopy/symfc-alm](https://github.com/phonopy/symfc-
 
 ## Features
 
-- Estimating force constants using the least squares method
+- Estimating force constants using the least squares method.
 
 - Estimating force constants using the ridge regression method and analytically calculating leave-one-out cross-validation (LOOCV) error.
 
